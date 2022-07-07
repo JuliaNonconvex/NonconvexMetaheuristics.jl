@@ -9,9 +9,6 @@ using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize, optimize!, Workspace
 import Metaheuristics: Metaheuristics, ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA, GA
 
-population_size(a::Metaheuristics.Algorithm) = a.parameters.N
-population_size(a::Metaheuristics.Algorithm{<:GA}) = a.parameters.selection.N
-
 struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
 end
