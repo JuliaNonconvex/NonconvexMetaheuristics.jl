@@ -12,6 +12,11 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 
 [compat]
+Metaheuristics = "3"
+NonconvexCore = "1.1.1"
+Parameters = "0.12"
+Reexport = "1"
+Setfield = "0.8, 1"
 julia = "1"
 
 [extras]
