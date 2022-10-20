@@ -78,7 +78,14 @@ end
 
 function optimize!(workspace::MetaheuristicsWorkspace)
     @unpack model, options, x0, alg = workspace
-    _alg = alg.algT(; drop_ks(options.nt, Val((:multiple_initial_solutions, :rng)))...)
+    _options = drop_ks(options.nt, Val((:multiple_initial_solutions, :rng)))
+    bounds = hcat(getmin(model), getmax(model))'
+    if alg.algT === GA
+        __options = (; _options..., mutation = Metaheuristics.PolynomialMutation(; bounds))
+    else
+        __options = _options
+    end
+    _alg = alg.algT(; __options...)
     N = options.nt.N
     obj = NonconvexCore.getobjective(model)
     ineq = NonconvexCore.getineqconstraints(model)
@@ -86,7 +93,6 @@ function optimize!(workspace::MetaheuristicsWorkspace)
     mh_func = x -> begin
         obj(x), (length(ineq.fs) === 0 ? [0.0] : ineq(x)), (length(eq.fs) === 0 ? [0.0] : eq(x))
     end
-    bounds = hcat(getmin(model), getmax(model))'
     newx = [rand(options.nt.rng, length(first(x0))) .* (getmax(model) .- getmin(model)) .+ getmin(model) for _ in 1:N-length(x0)]
     x0 = [x0; newx]
     population = [Metaheuristics.create_child(x, mh_func(x)) for x in x0]
