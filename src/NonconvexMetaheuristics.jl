@@ -14,17 +14,18 @@ struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
 end
 
-@params struct MetaheuristicsOptions
-    nt::NamedTuple
+struct MetaheuristicsOptions{N <: NamedTuple}
+    nt::N
 end
 function MetaheuristicsOptions(;
     multiple_initial_solutions = false,
     N = 100,
+    f_calls_limit = N * 100,
     rng = Random.GLOBAL_RNG,
     kwargs...,
 )
     return MetaheuristicsOptions(
-        merge(NamedTuple(kwargs), (; rng, N, multiple_initial_solutions)),
+        merge((; rng, N, f_calls_limit, multiple_initial_solutions), NamedTuple(kwargs)),
     )
 end
 
@@ -103,7 +104,7 @@ function optimize!(workspace::MetaheuristicsWorkspace)
     _options = drop_ks(options.nt, Val((:multiple_initial_solutions, :rng)))
     bounds = hcat(getmin(model), getmax(model))'
     if alg.algT === GA
-        __options = (; _options..., mutation = Metaheuristics.PolynomialMutation(; bounds))
+        __options = (; mutation = Metaheuristics.PolynomialMutation(; bounds), _options...)
     else
         __options = _options
     end
