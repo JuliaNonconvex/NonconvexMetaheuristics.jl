@@ -1,7 +1,7 @@
 name = "NonconvexMetaheuristics"
 uuid = "ece49558-7bf7-4b1b-9202-b5cfb4999bf7"
 authors = ["Mohamed Tarek <mohamed82008@gmail.com> and contributors"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 Metaheuristics = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
