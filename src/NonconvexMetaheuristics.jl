@@ -14,7 +14,7 @@ struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
 end
 
-struct MetaheuristicsOptions{N <: NamedTuple}
+struct MetaheuristicsOptions{N<:NamedTuple}
     nt::N
 end
 function MetaheuristicsOptions(;
