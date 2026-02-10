@@ -1,6 +1,6 @@
 name = "NonconvexMetaheuristics"
 uuid = "ece49558-7bf7-4b1b-9202-b5cfb4999bf7"
-authors = ["Mohamed Tarek <mohamed82008@gmail.com> and contributors"]
+authors = ["Mohamed Tarek <mohdibntarek@gmail.com> and contributors"]
 version = "0.1.2"
 
 [deps]
