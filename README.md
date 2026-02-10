@@ -1,6 +1,6 @@
 # NonconvexMetaheuristics
 
-[![Build Status](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/workflows/CI/badge.svg)](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions)
+[![Build Status](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions)
 [![Coverage](https://codecov.io/gh/JuliaNonconvex/NonconvexMetaheuristics.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaNonconvex/NonconvexMetaheuristics.jl)
 
 
