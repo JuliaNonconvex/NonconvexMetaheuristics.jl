@@ -8,7 +8,8 @@ using Reexport, Parameters, Setfield, Random
 using NonconvexCore: @params, VecModel, AbstractResult
 using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize, optimize!, Workspace
-import Metaheuristics: Metaheuristics, ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA, GA
+import Metaheuristics:
+    Metaheuristics, ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA, GA, Options
 
 struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
@@ -55,7 +56,7 @@ end
 function optimize(
     model::NonconvexCore.Model,
     optimizer::MetaheuristicsAlg,
-    x0::Vector,
+    x0::AbstractVector,
     args...;
     options = MetaheuristicsOptions(),
 )
@@ -101,29 +102,55 @@ end
 
 function optimize!(workspace::MetaheuristicsWorkspace)
     @unpack model, options, x0, alg = workspace
-    _options = drop_ks(options.nt, Val((:multiple_initial_solutions, :rng)))
+    _options = drop_ks(
+        options.nt,
+        Val((:multiple_initial_solutions, :rng, :f_calls_limit, :f_tol, :x_tol, :iterations)),
+    )
     bounds = hcat(getmin(model), getmax(model))'
     if alg.algT === GA
         __options = (; mutation = Metaheuristics.PolynomialMutation(; bounds), _options...)
     else
         __options = _options
     end
-    _alg = alg.algT(; __options...)
+    mh_options = Metaheuristics.Options(
+        f_calls_limit = get(options.nt, :f_calls_limit, 0.0),
+        f_tol = get(options.nt, :f_tol, 0.0),
+        x_tol = get(options.nt, :x_tol, 0.0),
+        iterations = get(options.nt, :iterations, 0),
+    )
+    _alg = alg.algT(; options = mh_options, __options...)
     N = options.nt.N
     obj = NonconvexCore.getobjective(model)
     ineq = NonconvexCore.getineqconstraints(model)
     eq = NonconvexCore.geteqconstraints(model)
     mh_func =
         x -> begin
-            obj(x),
-            (length(ineq.fs) === 0 ? [0.0] : ineq(x)),
-            (length(eq.fs) === 0 ? [0.0] : eq(x))
+            Float64(obj(x)),
+            Float64.(length(ineq.fs) === 0 ? [0.0] : ineq(x)),
+            Float64.(length(eq.fs) === 0 ? [0.0] : eq(x))
         end
+    box_min, box_max = getmin(model), getmax(model)
+    if !(all(isfinite, box_min) && all(isfinite, box_max))
+        @warn "Some variable bounds are not finite. Using finite surrogate bounds for the random initial population." maxlog =
+            1
+        finite_min = isfinite.(box_min)
+        finite_max = isfinite.(box_max)
+        box_min = [finite_min[i] ? box_min[i] : (finite_max[i] ? box_max[i] - 1 : -1.0) for i in eachindex(box_min)]
+        box_max = [finite_max[i] ? box_max[i] : (finite_min[i] ? box_min[i] + 1 : 1.0) for i in eachindex(box_max)]
+    end
+    if length(x0) > N
+        @warn "More initial solutions ($(length(x0))) than the population size N ($N). Truncating." maxlog = 1
+        x0 = x0[1:N]
+    end
     newx = [
-        rand(options.nt.rng, length(first(x0))) .* (getmax(model) .- getmin(model)) .+
-        getmin(model) for _ = 1:N-length(x0)
+        rand(options.nt.rng, length(first(x0))) .* (box_max .- box_min) .+
+        box_min for _ = 1:N-length(x0)
     ]
     x0 = [x0; newx]
+    if any(model.integer)
+        @warn "Integer variables are not supported by the Metaheuristics wrapper; they will be treated as continuous." maxlog =
+            1
+    end
     population = [Metaheuristics.create_child(x, mh_func(x)) for x in x0]
     prev_status = Metaheuristics.State(Metaheuristics.get_best(population), population)
     _alg.status = prev_status
