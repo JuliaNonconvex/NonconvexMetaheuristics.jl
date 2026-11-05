@@ -63,3 +63,25 @@ end
         @test norm(r.minimizer - [1 / 3, 8 / 27]) < tol
     end
 end
+
+@testset "f_calls_limit and infinite bounds" begin
+    Random.seed!(1)
+    # Regression test: f_calls_limit used to be passed as a bare keyword to the
+    # Metaheuristics constructors, which MethodError'd at the compat floor.
+    m = Model(f)
+    addvar!(m, [0.0, 0.0], [10.0, 10.0])
+    add_ineq_constraint!(m, x -> g(x, 2, 0))
+    add_ineq_constraint!(m, x -> g(x, -1, 1))
+    options = MetaheuristicsOptions(N = 20, f_calls_limit = 200)
+    r = NonconvexCore.optimize(m, MetaheuristicsAlg(ECA), [1.234, 2.345], options = options)
+    @test isfinite(r.minimum)
+
+    # Regression test: infinite bounds used to produce NaN/Inf initial
+    # populations.
+    m2 = Model(x -> x[1]^2 + x[2]^2)
+    addvar!(m2, [-Inf, -Inf], [Inf, Inf])
+    options2 = MetaheuristicsOptions(N = 20, f_calls_limit = 200)
+    r2 = NonconvexCore.optimize(m2, MetaheuristicsAlg(DE), [1.0, 1.0], options = options2)
+    @test isfinite(r2.minimum)
+    @test all(isfinite, r2.minimizer)
+end
