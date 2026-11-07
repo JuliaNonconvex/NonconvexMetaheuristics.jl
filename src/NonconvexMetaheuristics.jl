@@ -15,6 +15,17 @@ struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
 end
 
+# Equality and inequality constraints are handled via Metaheuristics.jl's
+# penalty aggregation of the (f, g, h) triple; sd constraints are not handled
+# and integer variables are treated as continuous (with a warning).
+NonconvexCore.solver_capabilities(::MetaheuristicsAlg) = ConstraintCapabilities(
+    eq = true,
+    ineq = true,
+    sd = false,
+    box = true,
+    integer = false,
+)
+
 struct MetaheuristicsOptions{N<:NamedTuple}
     nt::N
 end

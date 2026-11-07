@@ -123,3 +123,13 @@ end
     @test isfinite(r.minimum)
     @test all(isfinite, r.minimizer)
 end
+
+@testset "solver capabilities" begin
+    caps = solver_capabilities(MetaheuristicsAlg(ECA))
+    @test caps isa ConstraintCapabilities
+    @test caps.eq === true
+    @test caps.ineq === true
+    @test caps.sd === false
+    @test caps.box === true
+    @test caps.integer === false
+end
