@@ -85,3 +85,41 @@ end
     @test isfinite(r2.minimum)
     @test all(isfinite, r2.minimizer)
 end
+
+@testset "Algorithms not covered above: $malg" for malg in (DE, PSO, ABC, CGSA, WOA)
+    Random.seed!(1)
+    m = Model(x -> sum(x .^ 2))
+    addvar!(m, [-5.0, -5.0], [5.0, 5.0])
+    options = MetaheuristicsOptions(N = 50, f_calls_limit = 2000)
+    r = NonconvexCore.optimize(m, MetaheuristicsAlg(malg), [1.0, -1.0], options = options)
+    # Zero-order algorithms differ in convergence speed; assert that the run
+    # improves on the initial point (f = 2) with a finite result.
+    @test isfinite(r.minimum)
+    @test r.minimum < 0.8
+    @test norm(r.minimizer) < 1.0
+end
+
+@testset "MCCGA constraint-state incompatibility" begin
+    # MCCGA's final_stage! is not defined for the constraint-aware state type
+    # the wrapper builds, so the solve fails with a MethodError. Tracked in
+    # the issue about MCCGA support through the wrapper.
+    Random.seed!(1)
+    m = Model(x -> sum(x .^ 2))
+    addvar!(m, [-5.0, -5.0], [5.0, 5.0])
+    options = MetaheuristicsOptions(N = 50, f_calls_limit = 2000)
+    @test_broken isfinite(
+        NonconvexCore.optimize(m, MetaheuristicsAlg(MCCGA), [1.0, -1.0], options = options).minimum,
+    )
+end
+
+@testset "SA runs to completion" begin
+    # SA is a single-solution method; with the shared settings it does not
+    # reliably improve on the initial point, so only assert completion.
+    Random.seed!(1)
+    m = Model(x -> sum(x .^ 2))
+    addvar!(m, [-5.0, -5.0], [5.0, 5.0])
+    options = MetaheuristicsOptions(N = 50, f_calls_limit = 2000)
+    r = NonconvexCore.optimize(m, MetaheuristicsAlg(SA), [1.0, -1.0], options = options)
+    @test isfinite(r.minimum)
+    @test all(isfinite, r.minimizer)
+end
