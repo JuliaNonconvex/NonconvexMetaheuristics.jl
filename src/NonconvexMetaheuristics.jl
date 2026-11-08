@@ -24,6 +24,7 @@ NonconvexCore.solver_capabilities(::MetaheuristicsAlg) = ConstraintCapabilities(
     sd = false,
     box = true,
     integer = false,
+    infinite_bounds = true,
 )
 
 struct MetaheuristicsOptions{N<:NamedTuple}
