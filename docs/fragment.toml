@@ -1,0 +1,11 @@
+name = "Metaheuristics"
+modules = ["NonconvexMetaheuristics"]
+doctest_setup = "using NonconvexMetaheuristics"
+
+[[pages]]
+title = "Metaheuristics"
+file = "index.md"
+
+[[pages]]
+title = "Docstrings"
+file = "docstrings.md"
