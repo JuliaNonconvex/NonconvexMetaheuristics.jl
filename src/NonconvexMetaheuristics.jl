@@ -8,25 +8,43 @@ using Reexport, Parameters, Setfield, Random
 using NonconvexCore: @params, VecModel, AbstractResult
 using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize, optimize!, Workspace
-import Metaheuristics:
-    Metaheuristics, ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA, GA, Options
+import Metaheuristics: Metaheuristics, ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA, GA, Options
 
 struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
+end
+
+# Equality and inequality constraints are handled via Metaheuristics.jl's
+# penalty aggregation of the (f, g, h) triple; sd constraints are not handled
+# and integer variables are treated as continuous (with a warning).
+function NonconvexCore.solver_capabilities(::MetaheuristicsAlg)
+    return ConstraintCapabilities(;
+        linear_eq=true,
+        nonlinear_eq=true,
+        linear_ineq=true,
+        nonlinear_ineq=true,
+        linear_sd=false,
+        nonlinear_sd=false,
+        box=true,
+        continuous=true,
+        binary=false,
+        integer=false,
+        infinite_bounds=true,
+    )
 end
 
 struct MetaheuristicsOptions{N<:NamedTuple}
     nt::N
 end
 function MetaheuristicsOptions(;
-    multiple_initial_solutions = false,
-    N = 100,
-    f_calls_limit = N * 100,
-    rng = Random.GLOBAL_RNG,
+    multiple_initial_solutions=false,
+    N=100,
+    f_calls_limit=N * 100,
+    rng=Random.GLOBAL_RNG,
     kwargs...,
 )
     return MetaheuristicsOptions(
-        merge((; rng, N, f_calls_limit, multiple_initial_solutions), NamedTuple(kwargs)),
+        merge((; rng, N, f_calls_limit, multiple_initial_solutions), NamedTuple(kwargs))
     )
 end
 
@@ -39,10 +57,22 @@ end
 function MetaheuristicsWorkspace(
     model::VecModel,
     optimizer::MetaheuristicsAlg,
-    x0::AbstractVector = getinit(model);
-    options = MetaheuristicsOptions(),
+    x0::AbstractVector=NonconvexCore.getinit(model);
+    options=MetaheuristicsOptions(),
     kwargs...,
 )
+    return _metaheuristics_workspace(model, x0, options, optimizer)
+end
+# Keyword-forwarding path from `Workspace(model, optimizer, x0; kwargs...)`.
+# Passing the keywords as a positional NamedTuple avoids a `Core.kwcall` on
+# a `Base.Pairs` that fails on Julia 1.13.
+function MetaheuristicsWorkspace(
+    model::VecModel, optimizer::MetaheuristicsAlg, x0::AbstractVector, nt::NamedTuple
+)
+    options = haskey(nt, :options) ? nt[:options] : MetaheuristicsOptions((;))
+    return _metaheuristics_workspace(model, x0, options, optimizer)
+end
+function _metaheuristics_workspace(model::VecModel, x0, options, optimizer)
     return MetaheuristicsWorkspace(model, copy(x0), options, optimizer)
 end
 @params struct MetaheuristicsResult <: AbstractResult
@@ -58,7 +88,7 @@ function optimize(
     optimizer::MetaheuristicsAlg,
     x0::AbstractVector,
     args...;
-    options = MetaheuristicsOptions(),
+    options=MetaheuristicsOptions(),
 )
     N = options.nt.N
     @assert N > 0
@@ -78,7 +108,7 @@ function optimize(
     optimizer::MetaheuristicsAlg,
     x0,
     args...;
-    options = MetaheuristicsOptions(),
+    options=MetaheuristicsOptions(),
 )
     N = options.nt.N
     @assert N > 0
@@ -104,21 +134,23 @@ function optimize!(workspace::MetaheuristicsWorkspace)
     @unpack model, options, x0, alg = workspace
     _options = drop_ks(
         options.nt,
-        Val((:multiple_initial_solutions, :rng, :f_calls_limit, :f_tol, :x_tol, :iterations)),
+        Val((
+            :multiple_initial_solutions, :rng, :f_calls_limit, :f_tol, :x_tol, :iterations
+        )),
     )
     bounds = hcat(getmin(model), getmax(model))'
     if alg.algT === GA
-        __options = (; mutation = Metaheuristics.PolynomialMutation(; bounds), _options...)
+        __options = (; mutation=Metaheuristics.PolynomialMutation(; bounds), _options...)
     else
         __options = _options
     end
-    mh_options = Metaheuristics.Options(
-        f_calls_limit = get(options.nt, :f_calls_limit, 0.0),
-        f_tol = get(options.nt, :f_tol, 0.0),
-        x_tol = get(options.nt, :x_tol, 0.0),
-        iterations = get(options.nt, :iterations, 0),
+    mh_options = Metaheuristics.Options(;
+        f_calls_limit=get(options.nt, :f_calls_limit, 0.0),
+        f_tol=get(options.nt, :f_tol, 0.0),
+        x_tol=get(options.nt, :x_tol, 0.0),
+        iterations=get(options.nt, :iterations, 0),
     )
-    _alg = alg.algT(; options = mh_options, __options...)
+    _alg = alg.algT(; options=mh_options, __options...)
     N = options.nt.N
     obj = NonconvexCore.getobjective(model)
     ineq = NonconvexCore.getineqconstraints(model)
@@ -135,16 +167,23 @@ function optimize!(workspace::MetaheuristicsWorkspace)
             1
         finite_min = isfinite.(box_min)
         finite_max = isfinite.(box_max)
-        box_min = [finite_min[i] ? box_min[i] : (finite_max[i] ? box_max[i] - 1 : -1.0) for i in eachindex(box_min)]
-        box_max = [finite_max[i] ? box_max[i] : (finite_min[i] ? box_min[i] + 1 : 1.0) for i in eachindex(box_max)]
+        box_min = [
+            finite_min[i] ? box_min[i] : (finite_max[i] ? box_max[i] - 1 : -1.0) for
+            i in eachindex(box_min)
+        ]
+        box_max = [
+            finite_max[i] ? box_max[i] : (finite_min[i] ? box_min[i] + 1 : 1.0) for
+            i in eachindex(box_max)
+        ]
     end
     if length(x0) > N
-        @warn "More initial solutions ($(length(x0))) than the population size N ($N). Truncating." maxlog = 1
+        @warn "More initial solutions ($(length(x0))) than the population size N ($N). Truncating." maxlog =
+            1
         x0 = x0[1:N]
     end
     newx = [
-        rand(options.nt.rng, length(first(x0))) .* (box_max .- box_min) .+
-        box_min for _ = 1:N-length(x0)
+        rand(options.nt.rng, length(first(x0))) .* (box_max .- box_min) .+ box_min for
+        _ in 1:(N - length(x0))
     ]
     x0 = [x0; newx]
     if any(model.integer)
@@ -166,7 +205,8 @@ function optimize!(workspace::MetaheuristicsWorkspace)
 end
 
 function Workspace(model::VecModel, optimizer::MetaheuristicsAlg, args...; kwargs...)
-    return MetaheuristicsWorkspace(model, optimizer, args...; kwargs...)
+    x0 = isempty(args) ? NonconvexCore.getinit(model) : args[1]
+    return MetaheuristicsWorkspace(model, optimizer, x0, (; kwargs...))
 end
 
 end
