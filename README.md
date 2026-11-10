@@ -1,5 +1,7 @@
 # NonconvexMetaheuristics
 
+[![Documentation (stable)](https://img.shields.io/badge/docs-stable-blue.svg)](https://julianonconvex.github.io/NonconvexMetaheuristics.jl/stable)
+[![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://julianonconvex.github.io/NonconvexMetaheuristics.jl/dev)
 [![Build Status](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions)
 [![Coverage](https://codecov.io/gh/JuliaNonconvex/NonconvexMetaheuristics.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaNonconvex/NonconvexMetaheuristics.jl)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
