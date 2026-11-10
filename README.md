@@ -1,5 +1,7 @@
 # NonconvexMetaheuristics
 
+<img src="https://raw.githubusercontent.com/JuliaNonconvex/NonconvexMetaheuristics.jl/main/docs/src/assets/logo.png" width="120" align="right"/>
+
 [![Documentation (stable)](https://img.shields.io/badge/docs-stable-blue.svg)](https://julianonconvex.github.io/NonconvexMetaheuristics.jl/stable)
 [![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://julianonconvex.github.io/NonconvexMetaheuristics.jl/dev)
 [![Build Status](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaNonconvex/NonconvexMetaheuristics.jl/actions)
