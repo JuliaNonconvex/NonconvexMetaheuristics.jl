@@ -11,7 +11,7 @@ The main advantage of metaheuristic algorithms is that they don't require the ob
 `Nonconvex.jl` only supports the single objective optimization algorithms in `Metaheuristics.jl`. The following algorithms are supported:
 - Evolutionary Centers Algorithm (`ECA`)
 - Differential Evolution (`DE`)
-- Differential Evolution (`PSO`)
+- Particle Swarm Optimization (`PSO`)
 - Artificial Bee Colony (`ABC`)
 - Gravitational Search Algorithm (`CGSA`)
 - Simulated Annealing (`SA`)
@@ -39,11 +39,23 @@ The options keyword argument to the `optimize` function shown above must be an i
 ```julia
 options = MetaheuristicsOptions(N = 1000)
 ```
-All the other options that can be set for each algorithm can be found in the [algorithms section](https://jmejia8.github.io/Metaheuristics.jl/dev/algorithms/) of the documentation of `Metaheuristics.jl`. Note that one notable difference between using `Metaheuristics` directly and using it through `Nonconvex` is that in `Nonconvex`, all the options must be passed in through the `options` struct and only the algorithm type is part of the `alg` struct.
+The following options have defaults when not specified:
+
+- `N`: the population size (default `100`)
+- `f_calls_limit`: the maximum number of objective function evaluations
+  (default `100 * N`)
+- `rng`: the random number generator used to sample the initial population
+  and by the algorithm itself (default `Random.GLOBAL_RNG`)
+- `multiple_initial_solutions`: when `true`, `x0` is interpreted as a
+  population of solutions rather than a single solution (default `false`)
+
+All the other options that can be set for each algorithm (such as
+`f_tol`, `x_tol` and `iterations`, which control the stopping criteria of
+the `Metaheuristics.jl` solvers) can be found in the [algorithms section](https://jmejia8.github.io/Metaheuristics.jl/dev/algorithms/) of the documentation of `Metaheuristics.jl`. Note that one notable difference between using `Metaheuristics` directly and using it through `Nonconvex` is that in `Nonconvex`, all the options must be passed in through the `options` struct and only the algorithm type is part of the `alg` struct.
 
 ## Variable bounds
 
-When using `Metaheuristics` algorithms, finite variables bounds are necessary. This is because the initial population is sampled randomly in the finite interval of each variable. Use of `Inf` as an upper bound or `-Inf` is therefore not acceptable.
+The initial population is sampled randomly in the interval of each variable, so finite variable bounds are strongly recommended. If a variable has an infinite bound, the wrapper emits a warning and samples that variable in a finite surrogate interval instead of failing.
 
 ## Initialization
 
@@ -53,3 +65,15 @@ options = MetaheuristicsOptions(N = 1000, multiple_initial_solutions = true)
 x0 = [[1.0, 1.0], [0.0, 0.0]]
 ```
 When fewer solutions are passed in `x0` compared to the population size, random initial solutions between the lower and upper bounds are sampled to complete the initial population.
+
+## Result
+
+`optimize` returns a `MetaheuristicsResult` with the following fields:
+
+- `minimizer`: the best solution found by the algorithm
+- `minimum`: the best objective function value found
+- `result`: the raw `Metaheuristics.jl` optimization result, e.g. to inspect
+  the final population or the convergence history (see the
+  [`Metaheuristics` documentation](https://jmejia8.github.io/Metaheuristics.jl/dev/))
+- `alg`: the `MetaheuristicsAlg` instance used
+- `options`: the `MetaheuristicsOptions` instance used
