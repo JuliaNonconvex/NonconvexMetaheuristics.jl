@@ -1,6 +1,9 @@
+<p align="center">
+  <img src="assets/logo.png" width="400" alt="NonconvexMetaheuristics.jl logo">
+</p>
+
 # NonconvexMetaheuristics
 
-<img src="https://raw.githubusercontent.com/JuliaNonconvex/NonconvexMetaheuristics.jl/main/docs/src/assets/logo.png" width="120" align="right"/>
 
 [![Documentation (stable)](https://img.shields.io/badge/docs-stable-blue.svg)](https://julianonconvex.github.io/NonconvexMetaheuristics.jl/stable)
 [![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://julianonconvex.github.io/NonconvexMetaheuristics.jl/dev)
