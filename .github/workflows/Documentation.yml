@@ -10,6 +10,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Site destination directory (dev, stable, preview/PRnn)'
+        required: false
+        default: dev
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,7 +58,7 @@ jobs:
         run: julia --project=docs --color=yes docs/make.jl
       - name: Assemble site with the previous destinations
         env:
-          DEST: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || (github.event_name == 'pull_request' && format('preview/PR{0}', github.event.pull_request.number) || 'dev') }}
+          DEST: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || (github.event_name == 'pull_request' && format('preview/PR{0}', github.event.pull_request.number) || github.event.inputs.destination) }}
         run: |
           git clone --depth=1 --branch gh-pages \
             "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" /tmp/site \
