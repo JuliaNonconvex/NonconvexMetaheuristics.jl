@@ -1,0 +1,9 @@
+[deps]
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+NonconvexMetaheuristics = "ece49558-7bf7-4b1b-9202-b5cfb4999bf7"
+
+[compat]
+JET = "0.9, 0.10, 0.11, 0.12, 0.13"
+JSON = "1"
+julia = "1.10"
