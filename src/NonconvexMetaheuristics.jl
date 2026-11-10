@@ -61,6 +61,18 @@ function MetaheuristicsWorkspace(
     options=MetaheuristicsOptions(),
     kwargs...,
 )
+    return _metaheuristics_workspace(model, x0, options, optimizer)
+end
+# Keyword-forwarding path from `Workspace(model, optimizer, x0; kwargs...)`.
+# Passing the keywords as a positional NamedTuple avoids a `Core.kwcall` on
+# a `Base.Pairs` that fails on Julia 1.13.
+function MetaheuristicsWorkspace(
+    model::VecModel, optimizer::MetaheuristicsAlg, x0::AbstractVector, nt::NamedTuple
+)
+    options = haskey(nt, :options) ? nt[:options] : MetaheuristicsOptions((;))
+    return _metaheuristics_workspace(model, x0, options, optimizer)
+end
+function _metaheuristics_workspace(model::VecModel, x0, options, optimizer)
     return MetaheuristicsWorkspace(model, copy(x0), options, optimizer)
 end
 @params struct MetaheuristicsResult <: AbstractResult
@@ -193,7 +205,8 @@ function optimize!(workspace::MetaheuristicsWorkspace)
 end
 
 function Workspace(model::VecModel, optimizer::MetaheuristicsAlg, args...; kwargs...)
-    return MetaheuristicsWorkspace(model, optimizer, args...; kwargs...)
+    x0 = isempty(args) ? NonconvexCore.getinit(model) : args[1]
+    return MetaheuristicsWorkspace(model, optimizer, x0, (; kwargs...))
 end
 
 end
