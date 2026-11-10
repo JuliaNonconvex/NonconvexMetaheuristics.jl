@@ -57,7 +57,7 @@ end
 function MetaheuristicsWorkspace(
     model::VecModel,
     optimizer::MetaheuristicsAlg,
-    x0::AbstractVector=getinit(model);
+    x0::AbstractVector=NonconvexCore.getinit(model);
     options=MetaheuristicsOptions(),
     kwargs...,
 )
