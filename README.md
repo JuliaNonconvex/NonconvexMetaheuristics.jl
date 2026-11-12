@@ -16,7 +16,7 @@ Evolutionary metaheuristics
 
 ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA and GA gradient-free algorithms.
 
-NonconvexMetaheuristics.jl is part of the [JuliaNonconvex](https://github.com/JuliaNonconvex) ecosystem built on [NonconvexCore.jl](https://github.com/JuliaNonconvex/NonconvexCore.jl).
+NonconvexMetaheuristics.jl is part of the [JuliaNonconvex](https://github.com/JuliaNonconvex) ecosystem built on [NonconvexCore.jl](https://github.com/JuliaNonconvex/NonconvexCore.jl) under the [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) umbrella.
 
 ## Quick start
 
