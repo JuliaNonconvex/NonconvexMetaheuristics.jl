@@ -96,7 +96,7 @@ end
     @test Metaheuristics.minimum(r.result) ≈ r.minimum
 end
 
-@testitem "features: rng option and integer-variable warning path" begin
+@testitem "features: rng option and integer-variable validation" begin
     using NonconvexMetaheuristics, LinearAlgebra, Test, Random
 
     # A custom rng drives the population sampling.
@@ -111,14 +111,116 @@ end
     @test isfinite(r.minimum)
     @test r.minimum < 0.8
 
-    # Integer variables are treated as continuous with a warning.
+    # Integer variables are not supported (integer=false in
+    # solver_capabilities); the Model path validates the model against the
+    # declared capabilities and errors instead of silently treating the
+    # variables as continuous.
     m2 = Model(x -> sum(x .^ 2))
     addvar!(m2, [-5.0, -5.0], [5.0, 5.0]; integer=[true, false])
-    r2 = NonconvexCore.optimize(
+    @test_throws ArgumentError NonconvexCore.optimize(
         m2,
         MetaheuristicsAlg(DE),
         [1.0, -1.0];
         options=MetaheuristicsOptions(N=30, f_calls_limit=1000),
     )
+end
+
+@testitem "features: sd constraints are rejected on the Model and DictModel paths" begin
+    using NonconvexMetaheuristics, LinearAlgebra, Test
+
+    # Regression test: the custom optimize(::Model/::DictModel, ::MetaheuristicsAlg, x0)
+    # paths used to bypass checksubproblem! and silently ignore unsupported
+    # semidefinite constraints (sd=false in solver_capabilities).
+    m = Model(x -> sum(x .^ 2))
+    addvar!(m, [-2.0, -2.0], [2.0, 2.0])
+    add_sd_constraint!(m, x -> [x[1]^2 + 1.0 0.0; 0.0 x[2]^2 + 1.0], 2)
+    msg = try
+        NonconvexCore.optimize(
+            m,
+            MetaheuristicsAlg(DE),
+            [1.0, -1.0];
+            options=MetaheuristicsOptions(N=10, f_calls_limit=100),
+        )
+        ""
+    catch e
+        sprint(showerror, e)
+    end
+    @test occursin("semidefinite", msg)
+    @test occursin("MetaheuristicsAlg", msg)
+
+    dm = DictModel(x -> x[:a]^2 + x[:b]^2)
+    addvar!(dm, :a, -2.0, 2.0)
+    addvar!(dm, :b, -2.0, 2.0)
+    add_sd_constraint!(dm, x -> [x[:a]^2 + 1.0 0.0; 0.0 x[:b]^2 + 1.0], 2)
+    msg2 = try
+        NonconvexCore.optimize(
+            dm,
+            MetaheuristicsAlg(DE),
+            Dict(:a => 1.0, :b => -1.0);
+            options=MetaheuristicsOptions(N=10, f_calls_limit=100),
+        )
+        ""
+    catch e
+        sprint(showerror, e)
+    end
+    @test occursin("semidefinite", msg2)
+end
+
+@testitem "features: VecModel optimize without options" begin
+    using NonconvexMetaheuristics, LinearAlgebra, Test, Random
+
+    # Regression test: the default options used to be built as
+    # MetaheuristicsOptions((;)) (an empty NamedTuple), so optimize! then
+    # failed with a FieldError on options.nt.N.
+    Random.seed!(1)
+    m = Model(x -> sum(x .^ 2))
+    addvar!(m, [-5.0, -5.0], [5.0, 5.0])
+    vm, vx0, _ = NonconvexCore.tovecmodel(m, [1.0, -1.0])
+    r = NonconvexCore.optimize(vm, MetaheuristicsAlg(DE), vx0)
+    @test isfinite(r.minimum)
+    @test r.minimum < 0.8
+
+    # Same without an explicit initial point.
+    r2 = NonconvexCore.optimize(vm, MetaheuristicsAlg(DE))
     @test isfinite(r2.minimum)
+    @test r2.minimum < 0.8
+end
+
+@testitem "features: GA accepts a user-supplied mutation option" begin
+    using NonconvexMetaheuristics, LinearAlgebra, Test, Random
+
+    # Regression test: a user-supplied `mutation` option used to produce a
+    # duplicate-key NamedTuple error when building the GA options.
+    Random.seed!(1)
+    m = Model(x -> sum(x .^ 2))
+    addvar!(m, [-5.0, -5.0], [5.0, 5.0])
+    options = MetaheuristicsOptions(
+        N=20,
+        f_calls_limit=500,
+        mutation=Metaheuristics.PolynomialMutation(; bounds=[-5.0 -5.0; 5.0 5.0]),
+    )
+    r = NonconvexCore.optimize(m, MetaheuristicsAlg(GA), [1.0, -1.0], options=options)
+    @test isfinite(r.minimum)
+end
+
+@testitem "features: finite surrogate bounds are used as the solver search space" begin
+    using NonconvexMetaheuristics, LinearAlgebra, Test, Random
+
+    # Regression test: the finite surrogate bounds for infinite variable
+    # bounds were only used for the random initial population and not passed
+    # to Metaheuristics.optimize. PSO then flew to x[2] ≈ 10 (the true
+    # minimizer); with the finite search space it is constrained to [-1, 1].
+    Random.seed!(1)
+    m = Model(x -> x[1]^2 + (x[2] - 10)^2)
+    addvar!(m, [-Inf, -Inf], [Inf, Inf])
+    r = NonconvexCore.optimize(
+        m,
+        MetaheuristicsAlg(PSO),
+        [1.0, 1.0];
+        options=MetaheuristicsOptions(N=20, f_calls_limit=1000),
+    )
+    @test isfinite(r.minimum)
+    @test all(isfinite, r.minimizer)
+    @test all(abs.(r.minimizer) .<= 1.0 + 1e-8)
+    @test r.minimum >= 81.0 - 1e-8
 end

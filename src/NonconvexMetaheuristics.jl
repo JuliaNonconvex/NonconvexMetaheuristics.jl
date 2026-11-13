@@ -69,7 +69,7 @@ end
 function MetaheuristicsWorkspace(
     model::VecModel, optimizer::MetaheuristicsAlg, x0::AbstractVector, nt::NamedTuple
 )
-    options = haskey(nt, :options) ? nt[:options] : MetaheuristicsOptions((;))
+    options = haskey(nt, :options) ? nt[:options] : MetaheuristicsOptions()
     return _metaheuristics_workspace(model, x0, options, optimizer)
 end
 function _metaheuristics_workspace(model::VecModel, x0, options, optimizer)
@@ -100,6 +100,10 @@ function optimize(
     flat_x0 = first.(NonconvexCore.flatten.(map(x -> identity.(x), x0)))
     NonconvexCore._optimize_precheck(model, optimizer, first_x0)
     _model, _, unflatten = NonconvexCore.tovecmodel(model, first_x0)
+    # Validate the model against the declared capabilities as the generic
+    # NonconvexCore `optimize` path does; otherwise unsupported features
+    # (e.g. semidefinite constraints) would be silently ignored here.
+    NonconvexCore.checksubproblem!(_model, optimizer)
     r = optimize(_model, optimizer, flat_x0; options)
     return @set r.minimizer = unflatten(r.minimizer)
 end
@@ -121,6 +125,8 @@ function optimize(
     flat_x0 = first.(NonconvexCore.flatten.(x0))
     NonconvexCore._optimize_precheck(model, optimizer, first_x0)
     _model, _, unflatten = NonconvexCore.tovecmodel(model, first_x0)
+    # Same as the Model path above: enforce the declared capabilities.
+    NonconvexCore.checksubproblem!(_model, optimizer)
     r = optimize(_model, optimizer, flat_x0; options)
     return @set r.minimizer = unflatten(r.minimizer)
 end
@@ -138,19 +144,12 @@ function optimize!(workspace::MetaheuristicsWorkspace)
             :multiple_initial_solutions, :rng, :f_calls_limit, :f_tol, :x_tol, :iterations
         )),
     )
-    bounds = hcat(getmin(model), getmax(model))'
-    if alg.algT === GA
-        __options = (; mutation=Metaheuristics.PolynomialMutation(; bounds), _options...)
-    else
-        __options = _options
-    end
     mh_options = Metaheuristics.Options(;
         f_calls_limit=get(options.nt, :f_calls_limit, 0.0),
         f_tol=get(options.nt, :f_tol, 0.0),
         x_tol=get(options.nt, :x_tol, 0.0),
         iterations=get(options.nt, :iterations, 0),
     )
-    _alg = alg.algT(; options=mh_options, __options...)
     N = options.nt.N
     obj = NonconvexCore.getobjective(model)
     ineq = NonconvexCore.getineqconstraints(model)
@@ -163,7 +162,7 @@ function optimize!(workspace::MetaheuristicsWorkspace)
         end
     box_min, box_max = getmin(model), getmax(model)
     if !(all(isfinite, box_min) && all(isfinite, box_max))
-        @warn "Some variable bounds are not finite. Using finite surrogate bounds for the random initial population." maxlog =
+        @warn "Some variable bounds are not finite. Using finite surrogate bounds for the random initial population and the solver search bounds." maxlog =
             1
         finite_min = isfinite.(box_min)
         finite_max = isfinite.(box_max)
@@ -176,6 +175,18 @@ function optimize!(workspace::MetaheuristicsWorkspace)
             i in eachindex(box_max)
         ]
     end
+    bounds = hcat(box_min, box_max)'
+    if alg.algT === GA
+        # Override a user-supplied `mutation` with the bounds-aware polynomial
+        # mutation; merging avoids the duplicate-key NamedTuple error when the
+        # user passes their own `mutation` option.
+        __options = merge(
+            _options, (; mutation=Metaheuristics.PolynomialMutation(; bounds))
+        )
+    else
+        __options = _options
+    end
+    _alg = alg.algT(; options=mh_options, __options...)
     if length(x0) > N
         @warn "More initial solutions ($(length(x0))) than the population size N ($N). Truncating." maxlog =
             1
@@ -206,6 +217,11 @@ end
 
 function Workspace(model::VecModel, optimizer::MetaheuristicsAlg, args...; kwargs...)
     x0 = isempty(args) ? NonconvexCore.getinit(model) : args[1]
+    if !(first(x0) isa AbstractVector)
+        # A single flat initial point: store it as a one-element population,
+        # as the Model/DictModel `optimize` paths do.
+        x0 = [x0]
+    end
     return MetaheuristicsWorkspace(model, optimizer, x0, (; kwargs...))
 end
 
