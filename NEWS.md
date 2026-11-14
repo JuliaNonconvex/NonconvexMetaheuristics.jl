@@ -1,5 +1,19 @@
 # NEWS
 
+## 0.3.1
+
+- Enforced the solver capabilities and fixed options handling in the
+  Metaheuristics workspace (`Workspace` kwargs forwarding, JET isolation);
+  README and QA parity (docs badges, Aqua/JET, formatting); codecov OIDC/v5
+  uploads and the organization logo.
+
+## 0.3.0
+
+- NonconvexCore 2 with strict solver capability declarations
+  (`infinite_bounds`); dropped the local `[sources]` test override.
+- DocumenterFragments docs, tests migrated to TestItems, JET/Aqua/formatting
+  quality gates, and Julia 1.10+.
+
 ## 0.2.1
 
 - Added tests running DE, PSO, ABC, CGSA, WOA and SA on a simple quadratic
