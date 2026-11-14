@@ -17,7 +17,27 @@ end
 # Equality and inequality constraints are handled via Metaheuristics.jl's
 # penalty aggregation of the (f, g, h) triple; sd constraints are not handled
 # and integer variables are treated as continuous (with a warning).
-function NonconvexCore.solver_capabilities(::MetaheuristicsAlg)
+function NonconvexCore.solver_capabilities(alg::MetaheuristicsAlg)
+    if alg.algT === MCCGA
+        # MCCGA cannot solve constrained problems: Metaheuristics.jl only
+        # defines its final_stage! (Hooke-Jeeves local search) for the
+        # unconstrained state type, so a constrained solve crashes with a
+        # MethodError at the end of the run.
+        # Upstream: https://github.com/jmejia8/Metaheuristics.jl/issues/135
+        return ConstraintCapabilities(;
+            linear_eq=false,
+            nonlinear_eq=false,
+            linear_ineq=false,
+            nonlinear_ineq=false,
+            linear_sd=false,
+            nonlinear_sd=false,
+            box=true,
+            continuous=true,
+            binary=false,
+            integer=false,
+            infinite_bounds=true,
+        )
+    end
     return ConstraintCapabilities(;
         linear_eq=true,
         nonlinear_eq=true,
@@ -31,6 +51,15 @@ function NonconvexCore.solver_capabilities(::MetaheuristicsAlg)
         integer=false,
         infinite_bounds=true,
     )
+end
+
+# Hint appended to capability-validation errors naming the specific upstream
+# limitation, so users see why MCCGA is rejected for constrained models.
+function _capability_hint(alg::MetaheuristicsAlg)
+    alg.algT === MCCGA || return ""
+    return "MCCGA does not support constrained problems: Metaheuristics.jl " *
+           "only defines its final_stage! for unconstrained states " *
+           "(https://github.com/jmejia8/Metaheuristics.jl/issues/135)."
 end
 
 struct MetaheuristicsOptions{N<:NamedTuple}
@@ -103,7 +132,7 @@ function optimize(
     # Validate the model against the declared capabilities as the generic
     # NonconvexCore `optimize` path does; otherwise unsupported features
     # (e.g. semidefinite constraints) would be silently ignored here.
-    NonconvexCore.checksubproblem!(_model, optimizer)
+    NonconvexCore.checksubproblem!(_model, optimizer; hint=_capability_hint(optimizer))
     r = optimize(_model, optimizer, flat_x0; options)
     return @set r.minimizer = unflatten(r.minimizer)
 end
@@ -126,7 +155,7 @@ function optimize(
     NonconvexCore._optimize_precheck(model, optimizer, first_x0)
     _model, _, unflatten = NonconvexCore.tovecmodel(model, first_x0)
     # Same as the Model path above: enforce the declared capabilities.
-    NonconvexCore.checksubproblem!(_model, optimizer)
+    NonconvexCore.checksubproblem!(_model, optimizer; hint=_capability_hint(optimizer))
     r = optimize(_model, optimizer, flat_x0; options)
     return @set r.minimizer = unflatten(r.minimizer)
 end
@@ -154,12 +183,34 @@ function optimize!(workspace::MetaheuristicsWorkspace)
     obj = NonconvexCore.getobjective(model)
     ineq = NonconvexCore.getineqconstraints(model)
     eq = NonconvexCore.geteqconstraints(model)
-    mh_func =
+    constrained = length(ineq.fs) > 0 || length(eq.fs) > 0
+    if alg.algT === MCCGA && constrained
+        # Backstop for the direct VecModel / Workspace paths, which bypass
+        # the capability validation in checksubproblem!: Metaheuristics.jl
+        # only defines MCCGA's final_stage! (its Hooke-Jeeves local search)
+        # for the unconstrained state type, so a constrained solve would
+        # crash with a MethodError at the end of the run.
+        # Upstream: https://github.com/jmejia8/Metaheuristics.jl/issues/135
+        throw(
+            ArgumentError(
+                "MCCGA does not support constrained problems through the " *
+                "Metaheuristics wrapper (Metaheuristics.jl's final_stage! " *
+                "is only defined for unconstrained states). Use an " *
+                "unconstrained model or a different algorithm.",
+            ),
+        )
+    end
+    mh_func = if alg.algT === MCCGA
+        # Unconstrained MCCGA: build a scalar objective so the population
+        # state is the unconstrained type supported by MCCGA.final_stage!.
+        x -> Float64(obj(x))
+    else
         x -> begin
             Float64(obj(x)),
             Float64.(length(ineq.fs) === 0 ? [0.0] : ineq(x)),
             Float64.(length(eq.fs) === 0 ? [0.0] : eq(x))
         end
+    end
     box_min, box_max = getmin(model), getmax(model)
     if !(all(isfinite, box_min) && all(isfinite, box_max))
         @warn "Some variable bounds are not finite. Using finite surrogate bounds for the random initial population and the solver search bounds." maxlog =
