@@ -1,5 +1,10 @@
 # NEWS
 
+## 0.3.2
+
+- Added docstrings for `MetaheuristicsAlg`, `MetaheuristicsOptions` and the re-exported algorithm names (REPL help and API reference).
+
+
 ## 0.3.1
 
 - Enforced the solver capabilities and fixed options handling in the
