@@ -10,9 +10,91 @@ using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize, optimize!, Workspace
 import Metaheuristics: Metaheuristics, ECA, DE, PSO, ABC, CGSA, SA, WOA, MCCGA, GA, Options
 
+"""
+    MetaheuristicsAlg(algT)
+
+A gradient-free metaheuristic algorithm from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl), exposed
+through the Nonconvex interface. `algT` is one of the supported
+single-objective algorithm types: [`ECA`](@ref), [`DE`](@ref),
+[`PSO`](@ref), [`ABC`](@ref), [`CGSA`](@ref), [`SA`](@ref), [`WOA`](@ref),
+[`MCCGA`](@ref) or [`GA`](@ref), e.g. `MetaheuristicsAlg(ECA)`.
+
+Most algorithms support bounds and nonlinear inequality and equality
+constraints (handled via Metaheuristics.jl's penalty aggregation); `MCCGA`
+is unconstrained-only. Semidefinite constraints are not supported. Options
+are set through [`MetaheuristicsOptions`](@ref).
+"""
 struct MetaheuristicsAlg{A} <: AbstractOptimizer
     algT::A
 end
+
+# The algorithm types below are re-exported from Metaheuristics.jl; give each
+# of them a local docstring so they appear in the Nonconvex API reference.
+@doc """
+    ECA
+
+Evolutionary Centers Algorithm from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(ECA)`.
+""" ECA
+@doc """
+    DE
+
+Differential Evolution from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(DE)`.
+""" DE
+@doc """
+    PSO
+
+Particle Swarm Optimization from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(PSO)`.
+""" PSO
+@doc """
+    ABC
+
+Artificial Bee Colony from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(ABC)`.
+""" ABC
+@doc """
+    CGSA
+
+Gravitational Search Algorithm (also known as GSA) from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(CGSA)`.
+""" CGSA
+@doc """
+    SA
+
+Simulated Annealing from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(SA)`.
+""" SA
+@doc """
+    WOA
+
+Whale Optimization Algorithm from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(WOA)`.
+""" WOA
+@doc """
+    MCCGA
+
+Machine-coded Compact Genetic Algorithm from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Unconstrained problems only. Use as
+`MetaheuristicsAlg(MCCGA)`.
+""" MCCGA
+@doc """
+    GA
+
+Genetic Algorithm from
+[Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl): a
+gradient-free metaheuristic. Use as `MetaheuristicsAlg(GA)`.
+""" GA
 
 # Equality and inequality constraints are handled via Metaheuristics.jl's
 # penalty aggregation of the (f, g, h) triple; sd constraints are not handled
@@ -62,6 +144,14 @@ function _capability_hint(alg::MetaheuristicsAlg)
            "(https://github.com/jmejia8/Metaheuristics.jl/issues/135)."
 end
 
+"""
+    MetaheuristicsOptions(; options=Metaheuristics.Options(), kwargs...)
+
+Options for [`MetaheuristicsAlg`](@ref), passed to `optimize` as
+`options = ...`. The keyword arguments are forwarded to the wrapped
+Metaheuristics.jl `Options` (population size, iterations, tolerances, etc.);
+see the [Metaheuristics.jl options documentation](https://jmejia8.github.io/Metaheuristics.jl/dev/api/#Metaheuristics.Options).
+"""
 struct MetaheuristicsOptions{N<:NamedTuple}
     nt::N
 end
