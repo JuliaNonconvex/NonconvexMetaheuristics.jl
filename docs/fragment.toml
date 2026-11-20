@@ -3,8 +3,28 @@ modules = ["NonconvexMetaheuristics"]
 doctest_setup = "using NonconvexMetaheuristics"
 
 [[pages]]
-title = "Metaheuristics"
+title = "Introduction"
 file = "index.md"
+
+[[pages]]
+title = "Quick start"
+file = "quickstart.md"
+
+[[pages]]
+title = "Options"
+file = "options.md"
+
+[[pages]]
+title = "Variable bounds"
+file = "bounds.md"
+
+[[pages]]
+title = "Initialization"
+file = "init.md"
+
+[[pages]]
+title = "Result"
+file = "result.md"
 
 [[pages]]
 title = "Docstrings"
