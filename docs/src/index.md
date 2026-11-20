@@ -23,59 +23,8 @@ The main advantage of metaheuristic algorithms is that they don't require the ob
 
 For a summary of the strengths and weaknesses of each algorithm above, please refer to the table in the [algorithms page](https://jmejia8.github.io/Metaheuristics.jl/dev/algorithms/) in the `Metaheuristics` documentation. To define a `Metaheuristics` algorithm, you can use the `MetaheuristicsAlg` algorithm struct which wraps one of the above algorithm types, e.g. `MetaheuristicsAlg(ECA)` or `MetaheuristicsAlg(DE)`.
 
-## Quick start
-
-Given a model `model` and an initial solution `x0`, the following can be used to optimize the model using `Metaheuristics`.
-```julia
-using NonconvexMetaheuristics
-
-alg = MetaheuristicsAlg(ECA)
-options = MetaheuristicsOptions(N = 1000) # population size
-result = optimize(model, alg, x0, options = options)
-```
-`Metaheuristics` is an optional dependency of Nonconvex so you need to load the package to be able to use it.
-
-## Options
-
-The options keyword argument to the `optimize` function shown above must be an instance of the `MetaheuristicsOptions` struct when the algorihm is a `MetaheuristicsAlg`. To specify options use keyword arguments in the constructor of `MetaheuristicsOptions`, e.g:
-```julia
-options = MetaheuristicsOptions(N = 1000)
-```
-The following options have defaults when not specified:
-
-- `N`: the population size (default `100`)
-- `f_calls_limit`: the maximum number of objective function evaluations
-  (default `100 * N`)
-- `rng`: the random number generator used to sample the initial population
-  and by the algorithm itself (default `Random.GLOBAL_RNG`)
-- `multiple_initial_solutions`: when `true`, `x0` is interpreted as a
-  population of solutions rather than a single solution (default `false`)
-
-All the other options that can be set for each algorithm (such as
-`f_tol`, `x_tol` and `iterations`, which control the stopping criteria of
-the `Metaheuristics.jl` solvers) can be found in the [algorithms section](https://jmejia8.github.io/Metaheuristics.jl/dev/algorithms/) of the documentation of `Metaheuristics.jl`. Note that one notable difference between using `Metaheuristics` directly and using it through `Nonconvex` is that in `Nonconvex`, all the options must be passed in through the `options` struct and only the algorithm type is part of the `alg` struct.
-
-## Variable bounds
-
-The initial population is sampled randomly in the interval of each variable, so finite variable bounds are strongly recommended. If a variable has an infinite bound, the wrapper emits a warning and samples that variable in a finite surrogate interval instead of failing.
-
-## Initialization
-
-Most metaheuristic algorithms are population algorithms which can accept multiple initial solutions to be part of the initial population. In `Nonconvex`, you can specify multiple initial solutions by making `x0` a vector of solutions. However, since `Nonconvex` models support arbitrary collections as decision variables, you must specify that the `x0` passed in is indeed a population of solutions rather than a single solution that's a vector of vectors for instance. To specify that `x0` is a vector of solutions, you can set the `multiple_initial_solutions` option to `true` in the `options` struct, e.g:
-```julia
-options = MetaheuristicsOptions(N = 1000, multiple_initial_solutions = true)
-x0 = [[1.0, 1.0], [0.0, 0.0]]
-```
-When fewer solutions are passed in `x0` compared to the population size, random initial solutions between the lower and upper bounds are sampled to complete the initial population.
-
-## Result
-
-`optimize` returns a `MetaheuristicsResult` with the following fields:
-
-- `minimizer`: the best solution found by the algorithm
-- `minimum`: the best objective function value found
-- `result`: the raw `Metaheuristics.jl` optimization result, e.g. to inspect
-  the final population or the convergence history (see the
-  [`Metaheuristics` documentation](https://jmejia8.github.io/Metaheuristics.jl/dev/))
-- `alg`: the `MetaheuristicsAlg` instance used
-- `options`: the `MetaheuristicsOptions` instance used
+See [Quick start](quickstart.md) for the first steps, [Options](options.md)
+for the algorithm options, [Variable bounds](bounds.md) and
+[Initialization](init.md) for the model requirements, [Result](result.md) for
+the fields of the returned result and [Docstrings](docstrings.md) for the
+full API reference.
