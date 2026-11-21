@@ -1,4 +1,4 @@
-name = "Metaheuristics"
+name = "NonconvexMetaheuristics"
 modules = ["NonconvexMetaheuristics"]
 doctest_setup = "using NonconvexMetaheuristics"
 
