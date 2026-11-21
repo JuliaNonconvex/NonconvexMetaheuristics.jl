@@ -1,5 +1,8 @@
 # NEWS
 
+## 0.3.3
+
+- Docs: package-name section titles and left-aligned logos (no code changes).
 ## 0.3.2
 
 - Added docstrings for `MetaheuristicsAlg`, `MetaheuristicsOptions` and the re-exported algorithm names (REPL help and API reference).
