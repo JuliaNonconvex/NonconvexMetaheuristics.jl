@@ -1,7 +1,5 @@
 # NonconvexMetaheuristics
 
-![JuliaNonconvex logo](https://raw.githubusercontent.com/JuliaNonconvex/NonconvexMetaheuristics.jl/main/docs/src/assets/logo.png)
-
 ## Description
 
 [Metaheuristics.jl](https://github.com/jmejia8/Metaheuristics.jl) is an optimization library with a collection of [metaheuristic optimization algorithms](https://en.wikipedia.org/wiki/Metaheuristic) implemented. `NonconvexMetaheuristics.jl` allows the use of all the algorithms in the `Metaheuristics.jl` using the `MetaheuristicsAlg` struct.
